@@ -10,6 +10,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{cite}
+\usepackage{tabularx}
 
 \geometry{
  a4paper,
@@ -53,23 +54,83 @@ While Zepeda et al. focused on cross-sectional typology, this study contributes 
 \section{Methodology}
 
 \subsection{Dataset Description}
-The analysis is grounded in three primary datasets representing the 2021 baseline, sourced from agricultural censuses and reports. These datasets were merged to create a comprehensive profile for each district.
+The analysis is grounded in three primary datasets representing the 2021 baseline, sourced from agricultural censuses.
 
 \begin{table}[h]
 \centering
-\caption{Key Features Used in Analysis}
+\caption{Dataset 1: Holdings and Area}
+\small
+\begin{tabularx}{\columnwidth}{@{}Xl@{}}
+\toprule
+\textbf{Column Name} & \textbf{Data Type} \\ \midrule
+\texttt{Districts} & Text \\
+\texttt{Number of holdings} & Integer \\
+\texttt{Total wet area (ha)} & Decimal \\
+\texttt{Total dry area (ha)} & Decimal \\
+\texttt{Total area (ha)} & Decimal \\ \bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Dataset 2: Irrigation Data}
+\small
+\begin{tabularx}{\columnwidth}{@{}Xl@{}}
+\toprule
+\textbf{Column Name} & \textbf{Data Type} \\ \midrule
+\texttt{Districts} & Text \\
+\texttt{Total no. of holdings} & Integer \\
+\texttt{Total area (ha)} & Decimal \\
+\texttt{No. of holdings reporting irrigation} & Integer \\
+\texttt{Total area (ha) of irrigation} & Decimal \\
+\texttt{Irrigation by Gravity} & Integer/Decimal \\
+\texttt{Irrigation by Pumping} & Integer/Decimal \\
+\texttt{Irrigation by Dam/Reservoir} & Integer/Decimal \\
+\texttt{Irrigation by Tubewell/Boring} & Integer/Decimal \\
+\texttt{Irrigation by Other Types} & Integer/Decimal \\
+\texttt{Irrigation by Mixed Types} & Integer/Decimal \\ \bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Dataset 3: Livestock Data}
+\small
+\begin{tabularx}{\columnwidth}{@{}Xl@{}}
+\toprule
+\textbf{Column Name} & \textbf{Data Type} \\ \midrule
+\texttt{District} & Text \\
+\texttt{Total number of holdings} & Integer \\
+\texttt{Holdings reporting livestock} & Integer \\
+\texttt{Cattle (Holdings/Count)} & Integer \\
+\texttt{Buffalo (Holdings/Count)} & Integer \\
+\texttt{Goat/Chyangra (Holdings/Count)} & Integer \\
+\texttt{Sheep (Holdings/Count)} & Integer/Decimal \\
+\texttt{Pig/Boar (Holdings/Count)} & Integer \\
+\texttt{Other Livestocks (Holdings/Count)} & Integer \\
+\texttt{Poultry (Holdings/Count)} & Integer \\
+\texttt{Other Birds (Holdings/Count)} & Integer \\ \bottomrule
+\end{tabularx}
+\end{table}
+
+These datasets were merged and processed to generate the following derived features for analysis:
+
+\begin{table}[h]
+\centering
+\caption{Derived Features Used in Analysis}
 \label{tab:features}
-\begin{tabular}{@{}ll@{}}
+\small
+\begin{tabularx}{\columnwidth}{@{}Xl@{}}
 \toprule
 \textbf{Feature Name} & \textbf{Description} \\ \midrule
-Avg\_Land\_Size & Average land holding size (ha) \\
-Pct\_Irrigated & Percentage of irrigated land \\
-Cattle\_per\_HH & Average cattle per household \\
-Buffalo\_per\_HH & Average buffalo per household \\
-Goat\_per\_HH & Average goats per household \\
-Pig\_per\_HH & Average pigs per household \\
-Poultry\_per\_HH & Average poultry per household \\ \bottomrule
-\end{tabular}
+\texttt{Avg\_Land\_Size} & Average land holding size (ha) \\
+\texttt{Pct\_Irrigated} & Percentage of irrigated land \\
+\texttt{Cattle\_per\_HH} & Average cattle per household \\
+\texttt{Buffalo\_per\_HH} & Average buffalo per household \\
+\texttt{Goat\_per\_HH} & Average goats per household \\
+\texttt{Pig\_per\_HH} & Average pigs per household \\
+\texttt{Poultry\_per\_HH} & Average poultry per household \\ \bottomrule
+\end{tabularx}
 \end{table}
 
 \subsection{Data Preprocessing}
@@ -89,6 +150,13 @@ Missing values were handled based on the nature of the data:
 \subsubsection{Feature Scaling}
 To prepare the data for K-Means clustering, which is distance-based and sensitive to the scale of input variables, feature standardization was applied. The \texttt{StandardScaler} from the Scikit-learn library was used to transform features such as \textit{Avg\_Land\_Size} (measured in hectares) and \textit{Poultry\_per\_HH} (count ratio) into a common scale with a mean of 0 and a standard deviation of 1. This ensured that features with larger magnitudes did not disproportionately influence the cluster formation. The merged dataset, after these preprocessing steps, served as the robust seed for the synthetic data generation process.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\columnwidth]{Results/01-Correlation-Comparison.png}
+    \caption{Feature Correlation Matrix (2021 Baseline)}
+    \label{fig:correlation}
+\end{figure}
+
 \subsection{Synthetic Data Generation (Backcasting)}
 To enable a longitudinal analysis, synthetic historical data was generated for the period 1972-2020 using a backcasting approach starting from the 2021 baseline. The generation process applied specific annual trend assumptions to simulate historical conditions:
 \begin{itemize}
@@ -106,9 +174,24 @@ Unsupervised learning was employed to categorize districts into distinct farming
     \item \textbf{Feature Selection}: Key features included \textit{Avg\_Land\_Size}, \textit{Pct\_Irrigated}, \textit{Cattle\_per\_HH}, \textit{Buffalo\_per\_HH}, \textit{Goat\_per\_HH}, and \textit{Poultry\_per\_HH}.
     \item \textbf{Preprocessing}: Data was standardized using \texttt{StandardScaler} to ensure all features contributed equally.
     \item \textbf{Algorithm}: K-Means clustering was applied to the full 50-year dataset.
-    \item \textbf{Optimal K}: The optimal number of clusters was determined using the Elbow Method and Silhouette Score analysis, evaluating $k$ from 2 to 10.
-    \item \textbf{Cluster Naming}: Clusters were dynamically named based on dominant features (Z-score $> 0.4$). This logic allowed for the identification of specific profiles such as "Commercial Poultry", "Highland/Goat", "Buffalo/Dairy", "Irrigated", and "Subsistence/Low Input" systems.
+    \item \textbf{Optimal K}: The optimal number of clusters was determined using the Elbow Method and Silhouette Score analysis. The analysis yielded the highest silhouette score (0.317) for $k=9$, which was selected as the optimal number of clusters.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[width=\columnwidth]{Results/08-Best-K-Find.png}
+        \caption{Elbow Method and Silhouette Analysis}
+        \label{fig:elbow}
+    \end{figure}
+
+    \item \textbf{Cluster Naming}: Clusters were dynamically named based on dominant features. This resulted in 9 distinct profiles ranging from "Mixed / Diversified" to specialized categories like "Commercial Poultry \& Highland/Goat".
 \end{itemize}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=0.95\textwidth]{Results/10-Cluster-HeatMaps.png}
+    \caption{Cluster Profiles Heatmap (Z-Scores)}
+    \label{fig:cluster_heatmap}
+\end{figure*}
 
 \subsection{Structural Change Detection}
 To quantify the magnitude of change in farming systems, a Structural Change Index was calculated for each district. This index compares the mean values of agricultural indicators between the first decade (1972-1982) and the last decade (2012-2021).
@@ -140,9 +223,50 @@ The analysis of national trends reveals distinct patterns in Nepal's agricultura
     \item \textbf{Irrigation Expansion}: The percentage of irrigated land has shown a steady upward trend.
 \end{itemize}
 
+\textbf{50-Year Change Analysis (1972 $\to$ 2021):}
+\begin{itemize}
+    \item Avg\_Land\_Size: $0.75 \to 0.51$ (-31.6\%)
+    \item Pct\_Irrigated: $25.59 \to 42.14$ (+64.6\%)
+    \item Poultry\_per\_HH: $0.18 \to 10.57$ (+5526.7\%)
+    \item Pig\_per\_HH: $0.12 \to 0.32$ (+155.4\%)
+\end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Standard Deviation by Decade}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lccccccc@{}}
+\toprule
+Decade & Land & Irrig & Cattle & Buff & Goat & Pig & Pltry \\ \midrule
+1970 & 0.23 & 15.38 & 1.05 & 0.36 & 1.69 & 0.17 & 0.23 \\
+1980 & 0.21 & 16.84 & 1.05 & 0.35 & 1.69 & 0.21 & 0.49 \\
+1990 & 0.19 & 18.64 & 1.04 & 0.35 & 1.66 & 0.25 & 1.12 \\
+2000 & 0.18 & 20.83 & 1.01 & 0.35 & 1.65 & 0.31 & 2.57 \\
+2010 & 0.16 & 23.10 & 0.99 & 0.34 & 1.59 & 0.37 & 5.96 \\
+2020 & 0.16 & 24.44 & 0.99 & 0.34 & 1.56 & 0.42 & 8.98 \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Decade-over-Decade Growth Rates (\%)}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Decade & Land & Irrig & Cattle & Buff & Goat & Pig & Pltry \\ \midrule
+1980 & -6.8 & 9.5 & -0.5 & -0.8 & -0.7 & 20.5 & 113.3 \\
+1990 & -7.6 & 10.7 & -1.2 & -0.5 & -1.0 & 22.4 & 130.1 \\
+2000 & -7.6 & 10.8 & -1.3 & -0.8 & -0.9 & 22.7 & 130.5 \\
+2010 & -7.7 & 10.9 & -1.3 & -1.0 & -1.3 & 21.8 & 130.7 \\
+2020 & -4.6 & 6.2 & -0.6 & -0.6 & -0.7 & 12.5 & 60.1 \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
+
 \begin{figure*}[t]
     \centering
-    % \includegraphics[width=0.8\textwidth]{trends_with_forecast.png} % Placeholder for trend plot
+    \includegraphics[width=0.95\textwidth]{Results/14-Visualize-Forecasting.png}
     \caption{Agricultural Trends: Historical (1972-2021) and Forecast (2022-2030)}
     \label{fig:trends}
 \end{figure*}
@@ -150,29 +274,65 @@ The analysis of national trends reveals distinct patterns in Nepal's agricultura
 \subsection{Cluster Evolution and Transition}
 The K-Means analysis identified distinct farming clusters, revealing a dynamic shift in Nepal's agricultural landscape. The evolution of these clusters over time shows a clear transition from traditional, subsistence-based systems towards more specialized and commercialized forms of agriculture.
 
-The identified clusters typically include:
+The identified clusters include:
 \begin{itemize}
-    \item \textbf{Subsistence / Low Input}: Characterized by low values across most commercial indicators.
-    \item \textbf{Highland / Goat}: Dominated by goat farming, typical of hill and mountain districts.
-    \item \textbf{Buffalo / Dairy}: Districts with high buffalo density, indicating a focus on dairy production.
-    \item \textbf{Commercial Poultry}: A rapidly emerging cluster defined by extremely high poultry per household ratios.
+    \item \textbf{Cluster 0 (Mixed / Diversified)}: Good irrigation, diversified livestock.
+    \item \textbf{Cluster 1 (Buffalo/Dairy)}: High buffalo density, traditional dairy focus.
+    \item \textbf{Cluster 2 (Irrigated \& Large Land)}: Large landholdings with high irrigation coverage.
+    \item \textbf{Cluster 3 (Large Land \& Highland/Goat+)}: Large land sizes with significant goat populations.
+    \item \textbf{Cluster 4 (Highland/Goat)}: Dominated by goat farming, typical of hill districts.
+    \item \textbf{Cluster 5 (Commercial Poultry \& Irrigated)}: Emerging commercial hubs with high poultry density.
+    \item \textbf{Cluster 6 (Cattle)}: High cattle density, traditional systems.
+    \item \textbf{Cluster 7 (Highland/Goat \& Cattle+)}: Intensive grazing systems.
+    \item \textbf{Cluster 8 (Commercial Poultry \& Highland/Goat)}: Mixed commercial poultry with traditional goat farming.
 \end{itemize}
+
+\begin{table}[h]
+\centering
+\caption{Era Profiles (National Averages)}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Era & Land & Irrig & Goat & Poultry \\ \midrule
+Traditional (72-85) & 0.71 & 27.31 & 3.86 & 0.32 \\
+Early Modern (86-00) & 0.64 & 31.65 & 3.81 & 1.09 \\
+Commercial (01-21) & 0.55 & 38.10 & 3.73 & 5.21 \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
 
 The Cluster Transition Matrix (1972 vs 2021) highlights that while some districts have maintained their traditional profiles, a significant number have shifted to new clusters, particularly those associated with commercial poultry and intensive farming. This transition is indicative of the broader economic shifts occurring in the country.
 
 \begin{figure*}[t]
     \centering
-    % \includegraphics[width=0.8\textwidth]{cluster_transition_matrix.png}
-    \caption{Cluster Transition Matrix: 1972 $\to$ 2021}
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\linewidth]{Results/11-Cluster-Evolution.png}
+        \caption{Cluster Evolution}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\linewidth]{Results/12-Cluster-Transition-Matrix.png}
+        \caption{Transition Matrix (1972 $\to$ 2021)}
+    \end{subfigure}
+    \caption{Evolution and Transition of Farming Clusters}
     \label{fig:transition}
 \end{figure*}
 
 \subsection{Structural Change Analysis}
 The Structural Change Index identifies districts that have undergone the most radical transformations. These districts are often those that have rapidly urbanized or adopted commercial farming practices. The top districts exhibit high indices, driven largely by shifts in livestock composition (e.g., from large ruminants to poultry) and land use intensity.
 
+The top 5 districts by Structural Change Index are:
+\begin{enumerate}
+    \item Kanchanpur (522.8)
+    \item Rautahat (509.4)
+    \item Parbat (502.4)
+    \item Jhapa (498.2)
+    \item Panchthar (494.5)
+\end{enumerate}
+
 \begin{figure*}[t]
     \centering
-    % \includegraphics[width=0.8\textwidth]{structural_change_ranking.png}
+    \includegraphics[width=0.95\textwidth]{Results/13-Structure-Change-Visualization.png}
     \caption{Top 20 Districts by Structural Change (1972-2021)}
     \label{fig:structural_change}
 \end{figure*}
@@ -180,27 +340,96 @@ The Structural Change Index identifies districts that have undergone the most ra
 \subsection{Forecasting (2022-2030)}
 Forecasts for the next decade suggest a continuation of current trends. Poultry production is projected to grow further, while land holding sizes are expected to continue their gradual decline. These projections highlight the need for policies that support intensive farming on smaller land plots.
 
-\subsection{Classification Model Performance}
-The Decision Tree classifier achieved high accuracy in predicting farming clusters, demonstrating the distinctiveness of the identified profiles. The confusion matrix indicates that the model can effectively distinguish between distinct farming profiles, with misclassifications primarily occurring between similar or transitional clusters (e.g., between "Mixed" and "Subsistence").
+\begin{table}[h]
+\centering
+\caption{National Forecast (2022-2030)}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Year & Land & Irrig & Goat & Poultry \\ \midrule
+2022 & 0.50 & 41.74 & 3.69 & 7.01 \\
+2024 & 0.49 & 42.42 & 3.68 & 7.35 \\
+2026 & 0.48 & 43.09 & 3.68 & 7.70 \\
+2028 & 0.47 & 43.76 & 3.67 & 8.05 \\
+2030 & 0.46 & 44.44 & 3.66 & 8.39 \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
 
-Feature importance analysis confirms that variables like \textit{Poultry\_per\_HH} and \textit{Avg\_Land\_Size} are critical determinants of farming typology. The model's performance metrics (Precision, Recall, F1-Score) were consistently high across all classes, validating the robustness of the clustering and the predictability of the farming systems.
+\subsection{Classification Model Performance}
+The Decision Tree classifier achieved a training accuracy of 90.94\% and a testing accuracy of 89.35\%. The confusion matrix indicates that the model can effectively distinguish between distinct farming profiles.
+
+Feature importance analysis confirms that \textit{Pct\_Irrigated} (25.1\%) and \textit{Avg\_Land\_Size} (23.2\%) are the most critical determinants, followed by \textit{Cattle\_per\_HH} (21.4\%).
+
+\begin{table}[h]
+\centering
+\caption{Classification Report (Test Set)}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Cluster & Precision & Recall & F1-Score \\ \midrule
+C0: Mixed & 0.97 & 1.00 & 0.99 \\
+C1: Buffalo/Dairy & 1.00 & 0.89 & 0.94 \\
+C2: Irrigated & 0.95 & 0.99 & 0.97 \\
+C3: Large Land & 0.93 & 0.80 & 0.86 \\
+C4: Highland/Goat & 0.75 & 0.96 & 0.84 \\
+C5: Poultry & 1.00 & 1.00 & 1.00 \\
+C6: Cattle & 1.00 & 0.89 & 0.94 \\
+C7: Highland+ & 1.00 & 1.00 & 1.00 \\
+C8: Poultry+ & 0.77 & 0.36 & 0.49 \\ \bottomrule
+\end{tabular}%
+}
+\end{table}
 
 \begin{figure*}[t]
     \centering
-    % \includegraphics[width=0.8\textwidth]{confusion_matrix_50years.png}
-    \caption{Confusion Matrix - Decision Tree (50-Year Dataset)}
-    \label{fig:confusion_matrix}
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\linewidth]{Results/15-Confusion-Matrix-Decision-Tree.png}
+        \caption{Confusion Matrix}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \includegraphics[width=\linewidth]{Results/17-DecisionTree-Feature-Importance.png}
+        \caption{Feature Importance}
+    \end{subfigure}
+    \caption{Decision Tree Classifier Performance}
+    \label{fig:classification_performance}
 \end{figure*}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\columnwidth]{Results/18-Model-Performance-Analysis-By-Era.png}
+    \caption{Classification Accuracy by Era}
+    \label{fig:era_performance}
+\end{figure}
 
 \section{Discussion}
 The study successfully reconstructs the trajectory of Nepalese agriculture. The shift from large-animal based systems to poultry and smaller livestock reflects adaptation to shrinking land sizes and changing market demands. The stability analysis reveals that while some regions are resilient (or stagnant), others are dynamic and rapidly evolving.
 
 Our findings resonate with the work of Zepeda et al. (2023), who identified distinct farm typologies in Western Nepal driven by structural variables. Similarly, our K-Means analysis confirms that livestock composition and land size are robust discriminators for farming systems. However, our temporal analysis adds a dynamic layer, showing that these "structural" variables are not static over decades but evolve in response to broader economic forces. The high accuracy of our classification model further validates the existence of distinct, predictable farming profiles, suggesting that policy interventions can be targeted effectively based on these typologies.
 
-\section{Conclusion and Future Work}
-This 50-year temporal analysis provides a quantitative foundation for understanding agricultural change in Nepal. By combining synthetic data generation with machine learning techniques, we have highlighted the structural transformation of the sector. The findings underscore the growing importance of commercial livestock farming and the challenges posed by land fragmentation. Future interventions should be tailored to the specific farming clusters identified, recognizing the diversity of agricultural systems across the country.
+\section{Policy Recommendations}
+Based on the identified farming profiles, targeted interventions are recommended:
+\begin{itemize}
+    \item \textbf{Cluster 0 (Mixed)}: Establish livestock insurance and disease surveillance.
+    \item \textbf{Cluster 1 (Buffalo/Dairy)}: Implement small-scale irrigation and micro-credit programs.
+    \item \textbf{Cluster 2 (Irrigated)}: Support traditional transhumance and highland breed conservation.
+    \item \textbf{Cluster 3 (Large Land)}: Promote integrated farming and small-scale dairy cooperatives.
+    \item \textbf{Cluster 5 \& 8 (Commercial Poultry)}: Monitor production trends and ensure biosecurity.
+\end{itemize}
 
-Future work could involve integrating real historical data points where available to validate the synthetic generation process. Additionally, incorporating climate data and economic indicators could provide a more holistic view of the drivers of agricultural change. Expanding the predictive models to include deep learning architectures such as LSTMs for time-series forecasting could also improve the accuracy of future projections.
+\section{Conclusion and Future Work}
+This study successfully applied machine learning techniques to analyze 50 years of livestock farming data across Nepal's districts (1972-2021).
+
+\textbf{Key Achievements:}
+\begin{itemize}
+    \item \textbf{Data Integration}: Merged 2021 baseline data and generated 50 years of synthetic history.
+    \item \textbf{Clustering}: Identified 9 distinct farming profiles with a silhouette score of 0.317.
+    \item \textbf{Classification}: Developed a Decision Tree model with 89.4\% testing accuracy.
+    \item \textbf{Forecasting}: Projected trends to 2030, highlighting continued poultry growth.
+\end{itemize}
+
+The findings underscore the structural transformation of the sector, particularly the shift towards commercial poultry and the challenges of land fragmentation. Future work should focus on integrating real historical data and incorporating climate indicators.
 
 \begin{thebibliography}{9}
 \bibitem{fao}
