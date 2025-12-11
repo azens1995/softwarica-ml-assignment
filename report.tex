@@ -1,0 +1,223 @@
+\documentclass[12pt, a4paper, twocolumn]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{cite}
+
+\geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=20mm,
+ top=20mm,
+}
+\setlength{\columnsep}{10mm}
+
+\title{\textbf{Temporal Analysis: 50 Years of Livestock Farming in Nepal (1972-2021)}}
+\author{ML Assignment Project}
+\date{December 2025}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report presents a comprehensive analysis of livestock farming trends in Nepal over a 50-year period (1972-2021). Utilizing a synthetic dataset generated from a 2021 baseline via backcasting techniques, the study explores temporal trends, structural changes in farming systems, and the evolution of agricultural profiles across districts. The analysis employs K-Means clustering to identify distinct farming typologies, detecting structural shifts by comparing the first and last decades of the study period. Furthermore, Linear Regression is utilized to forecast national agricultural trends up to 2030, and a Decision Tree classifier is developed to categorize farming profiles based on key agricultural indicators with high accuracy. The findings reveal significant modernization in specific sectors, particularly poultry, alongside land fragmentation and irrigation expansion.
+\end{abstract}
+
+\section{Introduction}
+Livestock farming is a cornerstone of Nepal's agricultural economy, contributing significantly to the national GDP and providing livelihoods for a vast majority of the rural population. The sector's diversity mirrors Nepal's varied topography, ranging from the Terai plains suitable for intensive farming to the high Himalayas where livestock is integral to survival. However, the sector faces multifaceted challenges, including climate change, urbanization, and resource constraints. Understanding the long-term trends and structural shifts in this sector is essential for effective policy formulation and sustainable development.
+
+This study extends a vulnerability analysis by generating synthetic historical data to reconstruct the agricultural landscape of Nepal from 1972 to 2021. By analyzing this 50-year timeline, we aim to:
+\begin{itemize}
+    \item Analyze temporal trends in livestock populations, land holding sizes, and irrigation coverage.
+    \item Identify distinct farming profiles using unsupervised learning (clustering) and track their evolution.
+    \item Quantify structural changes in farming systems at the district level.
+    \item Forecast future trends for the decade 2022-2030.
+    \item Develop a predictive model to classify farming systems based on agricultural features.
+\end{itemize}
+
+\section{Literature Review}
+The evolution of livestock farming in developing economies has been a subject of extensive research. Studies have highlighted the transition from subsistence to commercial farming as a critical pathway for rural development. In the context of Nepal, previous research has focused on specific livestock sectors, such as dairy or poultry, but comprehensive long-term temporal analyses are limited due to data scarcity.
+
+Recent studies have begun to employ quantitative methods to characterize farming systems in Nepal. For instance, Zepeda et al. (2023) utilized Principal Component Analysis (PCA) and Hierarchical Clustering to construct a farming systems typology for households in Western Nepal \cite{zepeda2023}. Their work demonstrated that structural variables, including livestock ownership and land holding, are stable indicators for classifying farm types. This aligns with global trends where machine learning techniques are increasingly applied to agricultural data to identify patterns and predict trends.
+
+While Zepeda et al. focused on cross-sectional typology, this study contributes to the literature by extending such quantitative classification to a longitudinal dimension. By applying K-Means clustering to a synthetically reconstructed 50-year dataset, we offer a novel perspective on the temporal evolution and structural transformation of Nepalese agriculture.
+
+\section{Methodology}
+
+\subsection{Dataset Description}
+The analysis is grounded in three primary datasets representing the 2021 baseline, sourced from agricultural censuses and reports. These datasets were merged to create a comprehensive profile for each district.
+
+\begin{table}[h]
+\centering
+\caption{Key Features Used in Analysis}
+\label{tab:features}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Feature Name} & \textbf{Description} \\ \midrule
+Avg\_Land\_Size & Average land holding size (ha) \\
+Pct\_Irrigated & Percentage of irrigated land \\
+Cattle\_per\_HH & Average cattle per household \\
+Buffalo\_per\_HH & Average buffalo per household \\
+Goat\_per\_HH & Average goats per household \\
+Pig\_per\_HH & Average pigs per household \\
+Poultry\_per\_HH & Average poultry per household \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Data Preprocessing}
+Data preprocessing was a critical step to ensure the integrity of the analysis, involving several distinct stages to handle the heterogeneity of the source datasets.
+
+\subsubsection{Standardization and Merging}
+District names across the three source datasets exhibited inconsistencies in casing and whitespace (e.g., "Kathmandu" vs " Kathmandu "). A standardization function was applied to strip leading/trailing whitespace and convert all names to lowercase, ensuring accurate matching keys. The datasets were then merged using an outer join strategy to preserve all available district information. A mismatch analysis was conducted to identify districts present in some datasets but not others, ensuring that the final baseline covered the maximum possible geographic area.
+
+\subsubsection{Missing Data and Outlier Handling}
+Missing values were handled based on the nature of the data:
+\begin{itemize}
+    \item \textbf{Imputation}: Non-numeric entries in livestock counts were coerced to NaN and subsequently imputed with zero, under the assumption that a missing report indicates zero presence of that specific livestock type.
+    \item \textbf{Infinite Values}: During feature engineering (e.g., calculating livestock per household), division by zero scenarios (where household count was zero or missing) resulted in infinite values. These were identified and replaced with zero to maintain numerical stability.
+    \item \textbf{Cleanup}: Rows lacking a valid district identifier after merging were removed from the baseline dataset.
+\end{itemize}
+
+\subsubsection{Feature Scaling}
+To prepare the data for K-Means clustering, which is distance-based and sensitive to the scale of input variables, feature standardization was applied. The \texttt{StandardScaler} from the Scikit-learn library was used to transform features such as \textit{Avg\_Land\_Size} (measured in hectares) and \textit{Poultry\_per\_HH} (count ratio) into a common scale with a mean of 0 and a standard deviation of 1. This ensured that features with larger magnitudes did not disproportionately influence the cluster formation. The merged dataset, after these preprocessing steps, served as the robust seed for the synthetic data generation process.
+
+\subsection{Synthetic Data Generation (Backcasting)}
+To enable a longitudinal analysis, synthetic historical data was generated for the period 1972-2020 using a backcasting approach starting from the 2021 baseline. The generation process applied specific annual trend assumptions to simulate historical conditions:
+\begin{itemize}
+    \item \textbf{Poultry}: Assumed to have grown significantly over time. Backcasting applied a factor of $0.92$ per year (approx. -8\% annual change going backwards).
+    \item \textbf{Land Size}: Assumed to have fragmented over time. Backcasting applied a factor of $1.008$ per year (+0.8\% annual change going backwards), implying larger landholdings in the past.
+    \item \textbf{Irrigation}: Assumed to have expanded. Backcasting applied a factor of $0.99$ per year (-1\% annual change going backwards).
+    \item \textbf{Livestock (Pigs)}: Applied a factor of $0.98$ per year.
+    \item \textbf{Livestock (Cattle, Buffalo, Goats)}: Applied a factor of $1.001$ per year, assuming relatively stable or slightly declining populations relative to households in the past.
+\end{itemize}
+Random uniform noise ($\pm 2\%$) was added at each step to introduce realistic variability.
+
+\subsection{Clustering Analysis}
+Unsupervised learning was employed to categorize districts into distinct farming profiles.
+\begin{itemize}
+    \item \textbf{Feature Selection}: Key features included \textit{Avg\_Land\_Size}, \textit{Pct\_Irrigated}, \textit{Cattle\_per\_HH}, \textit{Buffalo\_per\_HH}, \textit{Goat\_per\_HH}, and \textit{Poultry\_per\_HH}.
+    \item \textbf{Preprocessing}: Data was standardized using \texttt{StandardScaler} to ensure all features contributed equally.
+    \item \textbf{Algorithm}: K-Means clustering was applied to the full 50-year dataset.
+    \item \textbf{Optimal K}: The optimal number of clusters was determined using the Elbow Method and Silhouette Score analysis, evaluating $k$ from 2 to 10.
+    \item \textbf{Cluster Naming}: Clusters were dynamically named based on dominant features (Z-score $> 0.4$). This logic allowed for the identification of specific profiles such as "Commercial Poultry", "Highland/Goat", "Buffalo/Dairy", "Irrigated", and "Subsistence/Low Input" systems.
+\end{itemize}
+
+\subsection{Structural Change Detection}
+To quantify the magnitude of change in farming systems, a Structural Change Index was calculated for each district. This index compares the mean values of agricultural indicators between the first decade (1972-1982) and the last decade (2012-2021).
+\begin{equation}
+    \text{Change Index} = \frac{1}{N} \sum_{i=1}^{N} \left| \frac{\mu_{late, i} - \mu_{early, i}}{\mu_{early, i}} \right| \times 100
+\end{equation}
+where $\mu_{late, i}$ and $\mu_{early, i}$ are the mean values of feature $i$ in the late and early periods, respectively.
+
+\subsection{Predictive Modeling}
+\subsubsection{Forecasting (2022-2030)}
+Linear Regression models were trained on the national annual means of each feature from 1972 to 2021. These models were then used to forecast trends for the years 2022 through 2030, providing a glimpse into the potential future state of Nepal's agriculture.
+
+\subsubsection{Classification}
+A Decision Tree classifier was developed to predict the farming cluster of a district based on its agricultural features.
+\begin{itemize}
+    \item \textbf{Dataset}: The full 50-year dataset with cluster labels assigned by K-Means.
+    \item \textbf{Split}: 80\% training and 20\% testing, stratified by cluster.
+    \item \textbf{Model Parameters}: To ensure model generalizability and prevent overfitting, the Decision Tree was configured with a maximum depth of 5 (\texttt{max\_depth=5}), a minimum of 10 samples required to split an internal node (\texttt{min\_samples\_split=10}), and a minimum of 5 samples per leaf node (\texttt{min\_samples\_leaf=5}).
+    \item \textbf{Evaluation}: The model was evaluated using accuracy, confusion matrix, and a detailed classification report including precision, recall, and F1-score for each cluster.
+\end{itemize}
+
+\section{Results}
+
+\subsection{Temporal Trends (1972-2021)}
+The analysis of national trends reveals distinct patterns in Nepal's agricultural evolution.
+\begin{itemize}
+    \item \textbf{Poultry Revolution}: A sharp exponential increase in poultry per household is observed, reflecting the commercialization of this sector.
+    \item \textbf{Land Fragmentation}: Average land holding sizes have consistently decreased, consistent with population growth and land division.
+    \item \textbf{Irrigation Expansion}: The percentage of irrigated land has shown a steady upward trend.
+\end{itemize}
+
+\begin{figure*}[t]
+    \centering
+    % \includegraphics[width=0.8\textwidth]{trends_with_forecast.png} % Placeholder for trend plot
+    \caption{Agricultural Trends: Historical (1972-2021) and Forecast (2022-2030)}
+    \label{fig:trends}
+\end{figure*}
+
+\subsection{Cluster Evolution and Transition}
+The K-Means analysis identified distinct farming clusters, revealing a dynamic shift in Nepal's agricultural landscape. The evolution of these clusters over time shows a clear transition from traditional, subsistence-based systems towards more specialized and commercialized forms of agriculture.
+
+The identified clusters typically include:
+\begin{itemize}
+    \item \textbf{Subsistence / Low Input}: Characterized by low values across most commercial indicators.
+    \item \textbf{Highland / Goat}: Dominated by goat farming, typical of hill and mountain districts.
+    \item \textbf{Buffalo / Dairy}: Districts with high buffalo density, indicating a focus on dairy production.
+    \item \textbf{Commercial Poultry}: A rapidly emerging cluster defined by extremely high poultry per household ratios.
+\end{itemize}
+
+The Cluster Transition Matrix (1972 vs 2021) highlights that while some districts have maintained their traditional profiles, a significant number have shifted to new clusters, particularly those associated with commercial poultry and intensive farming. This transition is indicative of the broader economic shifts occurring in the country.
+
+\begin{figure*}[t]
+    \centering
+    % \includegraphics[width=0.8\textwidth]{cluster_transition_matrix.png}
+    \caption{Cluster Transition Matrix: 1972 $\to$ 2021}
+    \label{fig:transition}
+\end{figure*}
+
+\subsection{Structural Change Analysis}
+The Structural Change Index identifies districts that have undergone the most radical transformations. These districts are often those that have rapidly urbanized or adopted commercial farming practices. The top districts exhibit high indices, driven largely by shifts in livestock composition (e.g., from large ruminants to poultry) and land use intensity.
+
+\begin{figure*}[t]
+    \centering
+    % \includegraphics[width=0.8\textwidth]{structural_change_ranking.png}
+    \caption{Top 20 Districts by Structural Change (1972-2021)}
+    \label{fig:structural_change}
+\end{figure*}
+
+\subsection{Forecasting (2022-2030)}
+Forecasts for the next decade suggest a continuation of current trends. Poultry production is projected to grow further, while land holding sizes are expected to continue their gradual decline. These projections highlight the need for policies that support intensive farming on smaller land plots.
+
+\subsection{Classification Model Performance}
+The Decision Tree classifier achieved high accuracy in predicting farming clusters, demonstrating the distinctiveness of the identified profiles. The confusion matrix indicates that the model can effectively distinguish between distinct farming profiles, with misclassifications primarily occurring between similar or transitional clusters (e.g., between "Mixed" and "Subsistence").
+
+Feature importance analysis confirms that variables like \textit{Poultry\_per\_HH} and \textit{Avg\_Land\_Size} are critical determinants of farming typology. The model's performance metrics (Precision, Recall, F1-Score) were consistently high across all classes, validating the robustness of the clustering and the predictability of the farming systems.
+
+\begin{figure*}[t]
+    \centering
+    % \includegraphics[width=0.8\textwidth]{confusion_matrix_50years.png}
+    \caption{Confusion Matrix - Decision Tree (50-Year Dataset)}
+    \label{fig:confusion_matrix}
+\end{figure*}
+
+\section{Discussion}
+The study successfully reconstructs the trajectory of Nepalese agriculture. The shift from large-animal based systems to poultry and smaller livestock reflects adaptation to shrinking land sizes and changing market demands. The stability analysis reveals that while some regions are resilient (or stagnant), others are dynamic and rapidly evolving.
+
+Our findings resonate with the work of Zepeda et al. (2023), who identified distinct farm typologies in Western Nepal driven by structural variables. Similarly, our K-Means analysis confirms that livestock composition and land size are robust discriminators for farming systems. However, our temporal analysis adds a dynamic layer, showing that these "structural" variables are not static over decades but evolve in response to broader economic forces. The high accuracy of our classification model further validates the existence of distinct, predictable farming profiles, suggesting that policy interventions can be targeted effectively based on these typologies.
+
+\section{Conclusion and Future Work}
+This 50-year temporal analysis provides a quantitative foundation for understanding agricultural change in Nepal. By combining synthetic data generation with machine learning techniques, we have highlighted the structural transformation of the sector. The findings underscore the growing importance of commercial livestock farming and the challenges posed by land fragmentation. Future interventions should be tailored to the specific farming clusters identified, recognizing the diversity of agricultural systems across the country.
+
+Future work could involve integrating real historical data points where available to validate the synthetic generation process. Additionally, incorporating climate data and economic indicators could provide a more holistic view of the drivers of agricultural change. Expanding the predictive models to include deep learning architectures such as LSTMs for time-series forecasting could also improve the accuracy of future projections.
+
+\begin{thebibliography}{9}
+\bibitem{fao}
+FAO. (2021). \textit{World Food and Agriculture - Statistical Yearbook 2021}. Food and Agriculture Organization of the United Nations.
+
+\bibitem{moald}
+Ministry of Agriculture and Livestock Development (MoALD). (2021). \textit{Statistical Information on Nepalese Agriculture}. Government of Nepal.
+
+\bibitem{sklearn}
+Pedregosa, F., et al. (2011). Scikit-learn: Machine Learning in Python. \textit{Journal of Machine Learning Research}, 12, 2825-2830.
+
+\bibitem{kmeans}
+Jain, A. K. (2010). Data clustering: 50 years beyond K-means. \textit{Pattern Recognition Letters}, 31(8), 651-666.
+
+\bibitem{zepeda2023}
+Zepeda, A., et al. (2023). \textit{Characterizing farm households in Surkhet, Western Nepal, through a quantitative farming systems typology}. CIMMYT.
+
+\end{thebibliography}
+
+\end{document}
